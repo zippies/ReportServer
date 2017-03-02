@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {% block head %}
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>API测试平台</title>
+            <link rel="icon" href="/static/imgs/favicon.ico" />
+            {% block css_index %}
+            <link href="/static/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link href="/static/css/templatemo-style.css" rel="stylesheet">
+            <link rel="stylesheet" href="/static/bower_components/codemirror/lib/codemirror.css">
+            <link rel="stylesheet" href="/static/bower_components/codemirror/theme/abcdef.css">
+            {% endblock %}
+        <script src="/static/bower_components/codemirror/lib/codemirror.js"></script>
+        <script src="/static/bower_components/codemirror/keymap/sublime.js"></script>
+        <script src="/static/bower_components/codemirror/mode/python/python.js"></script>
+        <style>
+            #maincontent{
+                background:url("static/imgs/mainback.png")
+            }
+        </style>
+        {% endblock %}
+    </head>
+    <body>
+        <!-- container all -->
+        {% block nav %}
+        <div class="templatemo-flex-row" id="navdiv">
+            <div class="templatemo-sidebar">
+                <header class="templatemo-site-header">
+                    <h1>接口测试平台</h1>
+                </header>
+                <!-- Search box -->
+                <form class="templatemo-search-form" action="http://www.baidu.com/s" target="_blank" role="search">
+                    <div class="input-group">
+                        <button type="submit" class="fa fa-search"></button>
+                        <input type="text" class="form-control" placeholder="Search by Baidu" name="wd" id="srch-term">
+                    </div>
+                </form>
+                <nav class="templatemo-left-nav">
+                    <ul>
+                        <li><a href="/suits" id="suitmanager" class="{% block jobclass %}{% endblock %}">测试集管理</a></li>
+                        <li><a href="/apis"  id="apimanager" class="{% block apiclass %}{% endblock %}">接口管理</a></li>
+                        <li><a href="/cases" id="casemanager" class="{% block caseclass %}{% endblock %}">测试用例管理</a></li>
+                    </ul>
+                </nav>
+            </div>
+            <!-- Main content -->
+            <div id="maincontent" class="templatemo-content col-1 light-gray-bg">
+                <div style="height:40px;line-height:40px;">
+                    {% if current_user.is_authenticated %}
+                    <div style="text-align:center">
+                        <a class="btn btn-default btn-sm" role="button" tabindex="0" id="environment-btn" data-toggle="popover" title="Environment Variables"><span class="glyphicon glyphicon-globe"></span> 配置环境变量</a>
+                        <span class="btn-group pull-right" style="margin-right:20px">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span style="color:black">hi,{{ current_user.nickname }}</span><span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/modifyinfo">资料设置</a></li>
+                                <li role="separator" class="divider"></li>
+                                <li><a href="/logout">注销登录</a></li>
+                            </ul>
+                        </span>
+                    </div>
+
+                    {%else%}
+                        <div class="pull-right" style="margin-right:20px"><a href="/login"><span class="glyphicon glyphicon-king"></span> 登 录</a></div>
+                    {% endif %}
+                </div>
+                <div class="templatemo-content-container">
+                    {% for message in get_flashed_messages() %}
+                        {% if message.type == 'error' %}
+                            <div class="alert alert-warning alert-dismissible fade in" role="alert">
+                        {% else %}
+                            <div class="alert alert-success alert-dismissible fade in" role="alert">
+                        {% endif %}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>
+                                <h7>
+                                    <span class="glyphicon glyphicon-grain" style="align:center"> {{ message.message }}</span>
+                                </h7>
+                            </div>
+                    {% endfor %}
+                    {% block container %}
+                    {% endblock %}
+                </div>
+            </div>
+            <!-- End of Main content -->
+            </div>
+        </div>
+        {% endblock %}
+        <!-- End of container all -->
+    </body>
+    {% block script_index %}
+        <script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
+        <script src="/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+        <script src="/static/js/layer.js"></script>
+        <script>
+            $(function(){
+                layer.config({
+				    extend: 'extend/layer.ext.js'
+			    });
+
+                freshenvironment();
+
+                $("#environment-btn").click(function(){
+                    freshenvironment();
+                })
+            })
+
+            function freshenvironment(){
+                $.get('/getenvironment',{},function(data){
+                    $("#environment-btn").attr("data-content",data)
+                    $('#environment-btn').popover({
+                        html:true
+                    })
+                })
+            }
+
+            function newEnv(){
+                if($("#envname").val() && $("#envvalue").val()){
+                    $.ajax({
+                        url:"/newenv",
+                        type:"post",
+                        data:$("#newenvform").serialize(),
+                        success:function(data){
+                            if(data.result){
+                                layer.msg("新增成功")
+                                $("#newenvdiv").after(data.data)
+                            }else{
+                                layer.msg(data.errorMsg)
+                            }
+                        }
+                    })
+                }else{
+                    if(!$("#envname").val()){
+                        layer.msg("变量名不能为空")
+                        $("#envname").focus()
+                    }else{
+                        layer.msg("值不能为空")
+                        $("#envvalue").focus()
+                    }
+
+                }
+            }
+
+            function saveEnv(name){
+                value = $("#envvalue_"+name).val()
+                $.ajax({
+                    url:"/saveenv",
+                    data:{"name":name,"value":value},
+                    type:"post",
+                    success:function(data){
+                        if(data.result){
+                            layer.msg("保存成功")
+                        }else{
+                            layer.msg(data.errorMsg)
+                        }
+                    }
+                })
+            }
+
+            function delEnv(name){
+                $.ajax({
+                    url:"/delenv/" + name,
+                    type:"post",
+                    async:true,
+                    success:function(data){
+                        if(data.result){
+                            layer.msg("删除成功")
+                            $("#"+name).remove()
+                        }else{
+                            layer.msg(data.errorMsg)
+                        }
+                    }
+                })
+            }
+        </script>
+    {% endblock %}
+
+</html>

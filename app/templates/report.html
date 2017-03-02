@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Automation Report</title>
+    <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/bower_components/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="/static/bower_components/codemirror/theme/abcdef.css">
+    <script src="//cdn.bootcss.com/jquery/1.11.3/jquery.min.js"></script>
+    <script src="//cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="http://apps.bdimg.com/libs/layer/2.1/layer.js"></script>
+    <script src="/static/bower_components/codemirror/lib/codemirror.js"></script>
+    <script src="/static/bower_components/codemirror/keymap/sublime.js"></script>
+    <script src="/static/bower_components/codemirror/mode/python/python.js"></script>
+    <style>
+        .bottom{
+            margin-bottom:20px;
+        }
+        .main{
+            padding:10px;
+        }
+    </style>
+</head>
+<body>
+    {% for log in result.log_details %}
+        <div class="modal fade bs-example-modal-lg" id="{{ log.module }}_{{ log.casename }}">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">项目:{{ log.module }} 用例名:{{ log.casename }}</h4>
+              </div>
+              <div class="modal-body">
+                <textarea id="text_{{log.module}}_{{log.casename}}" style="width:100%;height:400px">{{ log.caselog }}</textarea>
+                <script>
+                    var log_{{log.module}}_{{log.casename}} = CodeMirror.fromTextArea(document.getElementById("text_{{log.module}}_{{log.casename}}"),{
+                        indentUnit:4,
+                        lineNumbers:true,
+                        mode:"python",
+                        theme:"abcdef"
+                    });
+                    setTimeout(function(){
+                        log_{{log.module}}_{{log.casename}}.refresh();
+                        log_{{log.module}}_{{log.casename}}.focus();
+                    },200);
+                    log_{{log.module}}_{{log.casename}}.setSize("100%","400px")
+                </script>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              </div>
+            </div><!-- /.modal-content -->
+          </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+    {% endfor %}
+
+<div class="main">
+    <div class="page-header bottom">
+        <h1>
+            自动化测试报告 
+            {% if result.buildid %}
+                [Build_{{ result.buildid }}]
+            {% endif %}
+            {% if result.case_check_failed %}
+            <span class="label label-danger">Failed</span>
+            {% else %}
+            <span class="label label-success">Success</span>
+            {% endif %}
+        </h1>
+    </div>
+    <h4 class="bottom">
+        时间: <span class="label label-warning">{{ time }}</span>
+        测试用例数: <span class="label label-warning">{{ result.case_count }}</span>
+        检查点: <span class="label label-warning">{{ result.checkpoint_count }}</span>
+        未通过检查点: <span class="label label-danger">{{ result.checkpoint_faileds }}</span>
+        未通过率: <span class="label label-danger">{{ result.failed_percent }}</span>
+    </h4>
+    <hr>
+    {% if result.case_check_failed %}
+    <table class="table" style="width:100%">
+        <thead>
+            <tr class="danger">
+                <th style="width:5%">ID</th>
+                <th style="width:10%">项目</th>
+                <th style="width:20%">接口地址</th>
+                <th style="width:5%">用例名</th>
+                <th style="width:5%">检查点</th>
+                <th style="width:20%">检查点描述</th>
+                <th style="width:20%">错误描述</th>
+                <th style="width:5%">结果</th>
+                <th style="width:10%">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% set no = 0 %}
+        {% for r in result.case_check_failed %}
+            {% set no = no + 1 %}
+            <tr>
+                <td>{{ no }}</td>
+                <td>{{ r.module }}</td>
+                <td style="word-break:break-all">{{ r.url }}</td>
+                <td>{{ r.case }}</td>
+                <td>{{ r.func }}</td>
+                <td style='word-break:break-all'>{{ r.testdesc }}</td>
+                <td>{{ r.errorMsg }}</td>
+                <td><img src="/static/imgs/red.png"></td>
+                <td><a href="javascript:;" type="button" data-toggle="modal" data-target="#{{ r.module }}_{{ r.case }}" onclick="freshdata('{{r.module}}_{{r.case}}')">查看日志</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    {% if result.case_check_pass %}
+    <table class="table table-striped" style="width:100%">
+        <thead style="width:100%">
+            <tr class="success" style="width:100%">
+                <th style="width:5%">ID</th>
+                <th style="width:10%">项目</th>
+                <th style="width:20%">接口地址</th>
+                <th style="width:10%">用例名</th>
+                <th style="width:10%">检查点</th>
+                <th style="width:30%">检查点描述</th>
+                <th style="width:5%">结果</th>
+                <th style="width:10%">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% set no = 0 %}
+        {% for r in result.case_check_pass %}
+            {% set no = no + 1 %}
+            <tr>
+                <td>{{ no }}</td>
+                <td>{{ r.module }}</td>
+                <td style="word-break:break-all">{{ r.url }}</td>
+                <td>{{ r.case }}</td>
+                <td>{{ r.func }}</td>
+                <td style='word-break:break-all'>{{ r.testdesc }}</td>
+                <td><img src="/static/imgs/green.png"></td>
+                <td><a href="javascript:;" type="button" data-toggle="modal" data-target="#{{ r.module }}_{{ r.case }}" onclick="freshdata('{{r.module}}_{{r.case}}')">查看日志</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+</body>
+<script>
+    $(function(){
+        layer.config({
+            extend: 'http://apps.bdimg.com/libs/layer/2.1/extend/layer.ext.js'
+        });
+    })
+
+    function freshdata(mirrorname){
+        var mirror = eval("log_"+mirrorname)
+        setTimeout(function(){
+            mirror.refresh();
+            mirror.focus();
+        },200);
+        mirror.setSize("100%","400px")
+    }
+</script>
+</html>
